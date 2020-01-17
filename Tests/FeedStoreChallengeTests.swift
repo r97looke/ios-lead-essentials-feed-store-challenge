@@ -28,7 +28,7 @@ class InMemoryFeedStore: FeedStore {
     func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
         queue.async(flags: .barrier) { [weak self] in
             guard let self = self else { return }
-            
+
             self.feed = feed
             self.timestamp = timestamp
             completion(nil)
@@ -36,7 +36,9 @@ class InMemoryFeedStore: FeedStore {
     }
 
     func deleteCachedFeed(completion: @escaping DeletionCompletion) {
-        queue.async(flags: .barrier) { [unowned self] in
+        queue.async(flags: .barrier) { [weak self] in
+            guard let self = self else { return }
+            
             if self.feed != nil {
                 self.feed = nil
             }
@@ -132,7 +134,7 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
         var sut: FeedStore? = makeSUT()
 
         sut?.retrieve(completion: { (result) in
-            XCTAssertNil(result, "Expected no completion callback after feedstore has been deallocated")
+            XCTAssertNil(result, "Expected no completion callback for retrieve after feedstore has been deallocated")
         })
 
         sut = nil
@@ -141,8 +143,18 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
     func test_insert_doesNotDeliverResultAfterInstanceHasBeenDeallocated() {
         var sut: FeedStore? = makeSUT()
 
-        sut?.insert(uniqueImageFeed(), timestamp: Date(), completion: { (error) in
-            XCTFail("Expected no completion callback of insert after feed store has been deallocated")
+        sut?.insert(uniqueImageFeed(), timestamp: Date(), completion: { _ in
+            XCTFail("Expected no completion callback for insert after feed store has been deallocated")
+        })
+
+        sut = nil
+    }
+
+    func test_delete_doesNotDeliverResultAfterInstanceHasBeenDeallocated() {
+        var sut: FeedStore? = makeSUT()
+
+        sut?.deleteCachedFeed(completion: { _ in
+            XCTFail("Expected no completion callback for delete after feed store has been deallocated")
         })
 
         sut = nil
