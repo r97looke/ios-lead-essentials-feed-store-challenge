@@ -36,8 +36,8 @@ Finally, add to this README file:
 
 ### Comments and remarks you think other developers will find useful.
 
-...
+1. One thing I notice is that weather the operations have side effect should be performed or not after the instance has been deallocated. Should the cache still be insert or delete after the feed store instance has been deallocated. For in memory feed store case I choose to not perform operations. But maybe for the disk or database feed store will have different choice.
 
 ### The Dependency Diagram demonstrating the architecture of your solution. 
 
-...
+![InMemoryFeedStore Dependency Diagram](InMemoryFeedStoreDependencyDiagram.png)
