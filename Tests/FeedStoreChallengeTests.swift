@@ -13,7 +13,9 @@ class InMemoryFeedStore: FeedStore {
     var timestamp: Date?
 
     func retrieve(completion: @escaping RetrievalCompletion) {
-        queue.async { [unowned self] in
+        queue.async { [weak self] in
+            guard let self = self else { return }
+            
             if let feed = self.feed, let timestamp = self.timestamp {
                 completion(.found(feed: feed, timestamp: timestamp))
             }
@@ -123,7 +125,16 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 
 		assertThatSideEffectsRunSerially(on: sut)
 	}
-	
+
+    func test_retrieve_doesNotDeliverResultAfterInstanceHasBeenDeallocated() {
+        var sut: FeedStore? = makeSUT()
+
+        sut?.retrieve(completion: { (result) in
+            XCTAssertNil(result, "Expected no completion callback after feedstore has been deallocated")
+        })
+
+        sut = nil
+    }
 	// - MARK: Helpers
 	
 	private func makeSUT(file: StaticString = #file, line: UInt = #line) -> FeedStore {
