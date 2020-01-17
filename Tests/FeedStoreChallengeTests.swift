@@ -26,7 +26,9 @@ class InMemoryFeedStore: FeedStore {
     }
 
     func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
-        queue.async(flags: .barrier) { [unowned self] in
+        queue.async(flags: .barrier) { [weak self] in
+            guard let self = self else { return }
+            
             self.feed = feed
             self.timestamp = timestamp
             completion(nil)
@@ -131,6 +133,16 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 
         sut?.retrieve(completion: { (result) in
             XCTAssertNil(result, "Expected no completion callback after feedstore has been deallocated")
+        })
+
+        sut = nil
+    }
+
+    func test_insert_doesNotDeliverResultAfterInstanceHasBeenDeallocated() {
+        var sut: FeedStore? = makeSUT()
+
+        sut?.insert(uniqueImageFeed(), timestamp: Date(), completion: { (error) in
+            XCTFail("Expected no completion callback of insert after feed store has been deallocated")
         })
 
         sut = nil
